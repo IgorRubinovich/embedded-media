@@ -185,8 +185,6 @@
 					if(p.hasAttribute && p.hasAttribute("contenteditable"))
 						this.isInContentEditable = true;
 
-				this.setAttribute('hasScripts', 'true');
-			
 				mutationObserver = new MutationObserver(function(mr) {
 					this.widthChanged('domMutated');
 				}.bind(this));
