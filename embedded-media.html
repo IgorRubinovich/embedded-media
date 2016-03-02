@@ -1,3 +1,28 @@
+<dom-module id="embedded-media">
+	<style>
+		:host {
+			display : inline-block;
+		}
+		#content {
+			position : relative;
+		}
+		#cover {
+			position : absolute;
+			top : 0;
+			left : 0;
+			background : red;
+			opacity  : 0.5;
+		}
+		#aspectKeeper {
+			width : 100%;
+			height : 0;
+		}
+	</style>
+	<template>
+		<div id="content"><div id="aspectKeeper"><content></content></div><div id="cover"></div></div>
+	</template>
+</dom-module>
+
 <script>
 	(function () {
 		Polymer({
