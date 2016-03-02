@@ -10,7 +10,7 @@
 			position : absolute;
 			top : 0;
 			left : 0;
-			background : red;
+			/* background : red; */ /* good for testing */
 			opacity  : 0.5;
 		}
 		#aspectKeeper {
@@ -173,8 +173,8 @@
 			
 			attached : function() {
 				var p = this, firstChild, iframe, w, h, rect, mutationObserver;
-				if(!this.firstAttachment)
-					return;
+				// if(!this.firstAttachment)
+				// return;
 
 				this.firstAttachment = false;
 				
@@ -196,7 +196,7 @@
 					subtree : true
 				});
 				
-				swapScripts(Polymer.dom(this));
+				swapScripts(this);
 				Polymer.dom.flush();
 				this.widthChanged();
 			},
@@ -212,18 +212,22 @@
 			
 			//document.body.appendChild(d);
 			
-			var s = d.querySelectorAll('script'), i;
+			var s = Polymer.dom(d).querySelectorAll('script'), i;
 			
 			for(i = 0; i < s.length; i++)
 			{
 				clone = document.createElement('script');
 				clone.appendChild(document.createTextNode(s[i].textContent));
 				attrs = Array.prototype.slice.call(s[i].attributes);
-				attrs.forEach(function(a) { if(a.name != 'async') clone.setAttribute(a.name, a.value); });
+				attrs.forEach(function(a) { clone.setAttribute(a.name, a.value); });
 				
-				pn = s[i].parentNode; //Polymer.dom(s[i]).parentNode;
-				pn.insertBefore(clone, s[i]);
-				pn.removeChild(s[i]);
+				pn = Polymer.dom(s[i]).parentNode; //Polymer.dom(s[i]).parentNode;
+
+				if(!pn)
+					return;
+					
+				Polymer.dom(pn).insertBefore(clone, s[i]);
+				Polymer.dom(pn).removeChild(s[i]);
 			}
 			
 			return s.length;
