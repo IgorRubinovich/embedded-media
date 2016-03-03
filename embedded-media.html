@@ -150,17 +150,20 @@
 
 			widthChanged : function(ev, postfactum) {
 				var bcr, domMutated = (ev == true);
-		
-				if(this.iframe)
-					this.widthChangedIframe();
-				else
-					this.widthChangedScript(ev);
+
+				if(postfactum)
+					if(this.iframe)
+						this.widthChangedIframe();
+					else
+						this.widthChangedScript(ev);
+
+				if(this.lastTimeout)
+					clearTimeout(this.lastTimeout);
 
 				if(!postfactum)
 				{
-					setTimeout(function () { this.widthChanged(ev, true) }.bind(this), 300); // check one more time because observer seems not to fire between last change and actual relayout
-					
-					// setTimeout(function () { this.widthChanged('postfactum') }.bind(this), 1250); 
+					this.lastTimeout = setTimeout(function () { this.widthChanged(ev, true) }.bind(this), 50); // check one more time because observer seems not to fire between last change and actual relayout
+					//setTimeout(function () { this.widthChanged(ev, true) }.bind(this), 1000);
 				}
 				
 				return;
@@ -195,8 +198,8 @@
 				mutationObserver.observe(this.$.content, {
 					childList : true,
 					subtree : true,
-					characterData : true
-					//attributes : true
+					characterData : true,
+					attributes : true
 				});
 								
 				//swapChildren(Polymer.dom(this));
