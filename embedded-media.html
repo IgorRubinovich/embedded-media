@@ -1,4 +1,4 @@
-<dom-module id="embedded-media"> 
+<dom-module id="embedded-media">
 	<style>
 		:host {
 			display : inline-block;
@@ -40,39 +40,39 @@
 	(function () {
 		Polymer({
 			is : 'embedded-media',
-			
+
 			properties : [
-				{ 
+				{
 					name : "originalInnerHTML",
 					type : String
-				},				
-				{ 
+				},
+				{
 					name : "_originalInnerHTML",
 					type : String
 				},
-				{ 
+				{
 					name : "width",
 					type : Number,
 					notify : true,
 					observer : "widthChanged"
 				},
-				{ 
+				{
 					name : "aspect",
 					type : Number,
-					notify : true,
+					notify : true
 				},
 				{
 					name : "_showDialog",
 					type : Boolean
 				}
-				
+
 			],
-			
+
 			widthChangedIframe : function() {
-				//console.log('!! widthChangedIframe');
+//				console.log('!! widthChangedIframe');
 
 				var aspect, w, h, bcr = this.$.content.getBoundingClientRect();
-				
+
 				if(!(w = this.getAttribute('width')))
 					w = this.iframe.width || bcr.width || this.$.content.scrollWidth;
 				if(!(h = this.getAttribute('height')))
@@ -96,44 +96,94 @@
 
 				this.iframe.setAttribute('width', w);
 				this.iframe.setAttribute('height', h);
-				
+
 				this.updateStyles(w, h);
+
+				this.widthCheck();
+
 			},
-			
+
+			widthCheck: function(){
+
+				var bcr = this.$.content.getBoundingClientRect();
+
+				var childNodes = this.$.aspectKeeper.childNodes;
+
+				var cw =  Array.prototype.filter.call(childNodes, function(el){ return el.clientWidth }).map(function(el) { return el.clientWidth });
+				var ch =  Array.prototype.filter.call(childNodes, function(el){ return el.clientHeight }).map(function(el) { return el.clientHeight });
+
+				if(cw.length)
+				{
+					this.maxw2 = Math.max.apply({}, cw);
+					this.minw2 = Math.min.apply({}, cw);
+				}
+				if(ch.length)
+				{
+					this.maxh2 = Math.max.apply({}, ch);
+					this.minh2 = ch.reduce(function(p, c) { return p + c });
+				}
+
+				var maxw2 = this.maxw2;
+				var minw2 = this.minw2;
+				var maxh2 = this.maxh2;
+				var minh2 = this.minh2;
+				var fb2 = bcr.width;
+				if(fb2 != maxw2 ){
+					var that = this;
+					this.tt = setTimeout(function(){
+						that.setBackWrapper(maxw2, minh2 );
+					}, 500);
+				}
+				else if(fb2 != minw2 ){
+					var that = this;
+					this.tt = setTimeout(function(){
+						that.setBackWrapper(minw2, minh2 );
+					}, 500);
+				}
+			},
+
 			// for scripted embeds like Twitter
 			_widthChangedScript : function(reason) {
+//				console.log('!! _widthChangedScript');
 				var domMutated = reason == "domMutated";
-			
+
 				//console.log('!! widthChangedScript');
 				var aspect, w, h, bcr = this.$.content.getBoundingClientRect(), maxw, maxh, update, minh, maxh;
 
 				if(domMutated || !(w = this.width || this.getAttribute('width')))
 					w = bcr.width || this.$.content.scrollWidth;
-					
+
 				h = this.$.content.scrollHeight || bcr.height;
-				
+
 				if(!(w && h))
 					return;
-					
+
 				if(!domMutated)
 					this.width || this.getAttribute('width', w);
 
-				console.log();
 
 				this.updateStyles(w, h, reason);
+
+				this.widthCheck();
+
 			},
-			
-			
+
+			setBackWrapper: function(x, y){
+				console.log('set back');
+				this.updateStyles(x, y);
+			},
+
 			widthChangedScript : function(ev, postfactum) {
+				console.log('!! widthChangedScript');
 				var w, h, childNodes = this.$.aspectKeeper.childNodes, cw, ch;
-				
-				console.log("postfactum: %s, changed: %s, reason: %s", postfactum, this.changed, ev);
-				
+
+//				console.log("postfactum: %s, changed: %s, reason: %s", postfactum, this.changed, ev);
+//				console.log(postfactum);
 				if(postfactum)
 				{
 					cw =  Array.prototype.filter.call(childNodes, function(el){ return el.clientWidth }).map(function(el) { return el.clientWidth });
 					ch =  Array.prototype.filter.call(childNodes, function(el){ return el.clientHeight }).map(function(el) { return el.clientHeight });
-
+					console.dir(cw,ch);
 					if(cw.length)
 					{
 						this.maxw = Math.max.apply({}, cw);
@@ -156,7 +206,7 @@
 					return this._widthChangedScript(ev);
 				}
 
-				this.maxw = this.minw = this.maxh = this.minh = 0;				
+				this.maxw = this.minw = this.maxh = this.minh = 0;
 
 				if(this.lastTimeoutNonPostfactum)
 					clearTimeout(this.lastTimeoutNonPostfactum);
@@ -169,6 +219,7 @@
 			},
 
 			widthChanged : function(ev) {
+//				console.log('!! widthChanged');
 				if(this.iframe)
 					this.widthChangedIframe();
 				else
@@ -177,24 +228,28 @@
 			},
 
 			updateStyles : function(w, h, reason) {
+//				this.mutationObserver.disconnect();
+//				console.log('!! updateStyles');
+
+				clearTimeout(this.tt);
 				this.maxw && (w = Math.min(w, this.maxw));
 				this.minw && (w = Math.max(w, this.minw));
 				this.maxh && (h = Math.min(h, this.maxh));
 				this.minh && (h = Math.max(h, this.minh));
-				
+
 				if(w == this._prevWidth && h == this._prevHeight)
 				{
 					//clearTimeout(this.lastTimeoutPostfactum);
 					clearTimeout(this.lastTimeoutNonPostfactum);
-					
+
 					console.log("finished resize with: ", [w, this._prevWidth, h, this._prevHeight]);
-					
+
 					return this.changed = false;
 				}
-				
+
 				this.setAttribute('width', this.width = w);
 				this.setAttribute('height', this.height = h);
-				
+
 				this.$.content.style.width = w + "px";
 				this.style.width = w + "px";
 
@@ -207,7 +262,9 @@
 				//cm = parseInt(getComputedStyle(this).marginLeft);
 				//if(!cm)
 				//	this.style.marginLeft = "2px";
-				
+
+//				console.log(w, h)
+
 				this.$.cover.style.width = w + "px";
 				this.$.cover.style.height = h + "px";
 
@@ -216,37 +273,40 @@
 				this._prevWidth = w;
 				this._prevHeight = h;
 			},
-			
+
 			attributeChanged : function(name) {
 				if(name == 'width')
 					this.widthChanged('attributeChanged');
 			},
-			
+
+
+
+
 			ready : function() {
 				this.originalInnerHTML = this.$.aspectKeeper.innerHTML;
 				this.firstAttachment = true;
 			},
-			
+
 			setupCancel : function(ev) {
 				this.set('_showDialog', false);
 				this.$.setupDialog.close();
 			},
-			
+
 			setupAccept : function(ev)
 			{
 				this.set('_showDialog', false);
 				this.set('originalInnerHTML', this._originalInnerHTML);
 				//this.$.setupDialog.close();
 			},
-			
+
 			setup : function() {
 				this.set('_originalInnerHTML', this.originalInnerHTML);
-				this.set('_showDialog', true);				
+				this.set('_showDialog', true);
 				this.async(function() {
 					this.$$('#setupDialog').open();
 				});
 			},
-			
+
 			attached : function() {
 				var p = this, firstChild, iframe, w, h, rect, mutationObserver, oconfig, cm;
 				// if(!this.firstAttachment)
@@ -254,55 +314,56 @@
 
 				var interval, iframe = Polymer.dom(this).querySelector('iframe');
 				this.iframe = Polymer.dom(this).childNodes.length && iframe;
-				
+
 				while(p.nodeType == 1 && (p = Polymer.dom(p).parentNode))
 					if(p.hasAttribute && p.hasAttribute("contenteditable"))
 						this.isInContentEditable = true;
-				
-				mutationObserver = new MutationObserver(function(mr) {
+
+				this.mutationObserver = new MutationObserver(function(mr) {
 					this.widthChanged('domMutated');
 				}.bind(this));
-				
+
 				oconfig = {
 					childList : true,
 					subtree : true,
 					characterData : true
 				}
-				
+
 				if(!iframe)
 					oconfig.attributes = true;
-								
-				mutationObserver.observe(this.$.content, oconfig);
+
+				this.mutationObserver.observe(this.$.content, oconfig);
+
 
 				//swapChildren(Polymer.dom(this));
-				
+
 				swapScripts(this);
-				
+
 			    if(this.firstAttachment && typeof(FB) != 'undefined') {
 					// init script must be run by page master:
 					// (function(d, s, id) { var js, fjs = d.getElementsByTagName(s)[0]; if (d.getElementById(id)) return; js = d.createElement(s); js.id = id; js.src = "//connect.facebook.net/en_US/all.js#xfbml=1"; fjs.parentNode.insertBefore(js, fjs); }(document, 'script', 'facebook-jssdk'));
 					FB.XFBML.parse();
 				}
-				
+
 				Polymer.dom.flush();
 				this.widthChanged();
-				
+
 				this.firstAttachment = false;
 			},
-			
+
 			domChanged : function() {
 				console.log('dom changed!')
 			}
 		})
-		
-				
+
+
 		function swapScripts (d) {
 			var clone, attrs, pn;
-			
+
 			//document.body.appendChild(d);
-			
+
 			var s = Polymer.dom(d).querySelectorAll('script'), i;
-			
+
 			for(i = 0; i < s.length; i++)
 			{
 				clone = document.createElement('script');
@@ -318,16 +379,16 @@
 				Polymer.dom(pn).insertBefore(clone, s[i]);
 				Polymer.dom(pn).removeChild(s[i]);
 			}
-			
+
 			return s.length;
 			//document.body.removeChild(d);
 		}
-		
+
 		function swapChildren(d, skip) {
 			var i, f = document.createDocumentFragment();;
 			for(i = 0; i < d.childNodes.length; i++)
 				f.appendChild(d.childNodes[i]);
-			
+
 			d.parentNode.appendChild(f, d);
 			//d.parentNode.removeChild(d);
 		}
