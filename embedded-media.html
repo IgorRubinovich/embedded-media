@@ -5,9 +5,11 @@
 		}
 		#content {
 			position : relative;
+			background : green; /* good for testing */
+			opacity  : 0.5;
 		}
 		#cover {
-			position : absolute;
+			position : relative;
 			top : 0;
 			left : 0;
 			background : red; /* good for testing */
@@ -22,7 +24,10 @@
 		}
 	</style>
 	<template>
-		<div id="content"><div id="aspectKeeper"><content></content></div><div id="cover"></div></div>
+		<!-- displayed content -->
+		<span id="content"><div id="aspectKeeper"><content></content></div><div id="cover"></div></span>
+		
+		<!-- setup dialaog -->
 		<template is="dom-if" if="{{ _showDialog }}">
 			<paper-dialog id="setupDialog">
 				<textarea>{{ _originalInnerHTML }}</textarea>
@@ -44,7 +49,8 @@
 			properties : [
 				{ 
 					name : "originalInnerHTML",
-					type : String
+					type : String,
+					observer : "originalInnerHTMLChanged"
 				},				
 				{ 
 					name : "_originalInnerHTML",
@@ -52,6 +58,12 @@
 				},
 				{ 
 					name : "width",
+					type : Number,
+					notify : true,
+					observer : "widthChanged"
+				},
+				{ 
+					name : "height",
 					type : Number,
 					notify : true,
 					observer : "widthChanged"
@@ -125,96 +137,154 @@
 			
 			
 			widthChangedScript : function(ev, postfactum) {
-				var w, h, childNodes = this.$.aspectKeeper.childNodes, cw, ch;
+				var w, h, cw, ch, cbr, childrenSize;
 				
-				console.log("postfactum: %s, changed: %s, reason: %s", postfactum, this.changed, ev);
+				cbr = this.$.content.getBoundingClientRect()
 				
-				if(postfactum)
-				{
-					cw =  Array.prototype.filter.call(childNodes, function(el){ return el.clientWidth }).map(function(el) { return el.clientWidth });
-					ch =  Array.prototype.filter.call(childNodes, function(el){ return el.clientHeight }).map(function(el) { return el.clientHeight });
+				childrenSize = this.sizeFromChildNodes();
+				
+				//if(ev == 'attributeChanged')
+				//{
+				
+				console.log('width changed, postfactum: ', postfactum);
+				
+				this.$.cover.style.width = childrenSize.maxw + "px"
+				this.$.cover.style.height = childrenSize.maxh + "px"
+				this.style.height = childrenSize.maxh + "px"
+				this.style.width = childrenSize.maxw + "px"
+				this.set('height', childrenSize.maxh);
+				this.set('width', childrenSize.maxw);
 
-					if(cw.length)
-					{
-						this.maxw = Math.max.apply({}, cw);
-						this.minw = Math.min.apply({}, cw);
-					}
-					if(ch.length)
-					{
-						this.maxh = Math.max.apply({}, ch);
-						this.minh = ch.reduce(function(p, c) { return p + c });
-					}
-
-					console.log("maxw: %s, minw: %s, maxh: %s, minh: %s, ", this.maxw, this.minw, this.maxh, this.minh);
-
-					if(this.lastTimeoutPostfactum)
-						clearTimeout(this.lastTimeoutPostfactum);
-
-						if(postfactum == 1)
-							this.lastTimeoutPostfactum = setTimeout(function () { this.widthChangedScript(ev, 2); }.bind(this), 300 ); // check one more time because observer seems not to fire between last change and actual relayout
-
-					return this._widthChangedScript(ev);
+				if(this.isInContentEditable)
+				{				
+					this.$.cover.style.width = w + "px";
+					this.$.cover.style.height = h + "px";
 				}
-
-				this.maxw = this.minw = this.maxh = this.minh = 0;				
-
-				if(this.lastTimeoutNonPostfactum)
-					clearTimeout(this.lastTimeoutNonPostfactum);
+				
+				if(!postfactum)
+				{
+					clearTimeout(this.lastTimeout);
+					this.lastTimeout = setTimeout(function() {
+						this.widthChangedScript(ev, true);
+					}.bind(this), 1000);
+				}
+				//}
+					//this.updateStyles(this.$.content.scrollWidth, this.$.content.scrollHiehgt)
+				
+				return
+				
+				if(this.lastTimeout && !postfactum)
+					return;
+			
+				console.log("postfactum: %s, changed: %s, reason: %s", postfactum, this.changed, ev);
+					
+				clearTimeout(this.lastTimeout);
+				this.lastTimeout = null;
 
 				if(!postfactum)
-					this.lastTimeoutNonPostfactum = setTimeout(function () { this.widthChangedScript(ev, 1); }.bind(this), ev == 'domChanged' ? 200 : 50); // check one more time because observer seems not to fire between last change and actual relayout
+				{
+					if(ev == 'attributeChanged')
+						this.maxw = this.minw = this.maxh = this.minh = 0;
+					
+					console.log('attribute changed non-postfactum');
+					
+					clearTimeout(this.lastTimeout);
+					this.lastTimeout = setTimeout(function () { 
+						this.widthChangedScript(ev, 1);
+					}.bind(this), 10); //'domMutated' ? 100 : 300);
+				}
+				
+				if(postfactum == 1)
+				{
+					this.sizeFromChildNodes();
 
-				if(postfactum != 2)
-					this._widthChangedScript(ev);
+					clearTimeout(this.lastTimeoutPF);
+					this.lastTimeoutPF = setTimeout(function () { 
+						this.widthChangedScript(ev, 2); 
+					}.bind(this), 50 ); // check one more time because observer seems not to fire between last change and actual relayout
+
+					if(postfactum == 1)
+					{
+						clearTimeout(this.lastTimeoutPF2);
+						this.lastTimeoutPF2 = setTimeout(function () { 
+							this.widthChangedScript(ev, 3);
+						}.bind(this), 1000); //'domMutated' ? 100 : 300);
+					}
+				}
+				
+				this._widthChangedScript(ev);
+			},
+			
+			sizeFromChildNodes : function() {
+				var res = {}, 
+					childNodes = this.$.aspectKeeper.childNodes,
+					cw =  Array.prototype.filter.call(childNodes, function(el){ return el.clientWidth }).map(function(el) { return el.clientHeight && el.clientWidth }),
+					ch =  Array.prototype.filter.call(childNodes, function(el){ return el.clientHeight }).map(function(el) { return el.clientHeight });
+
+				if(cw.length)
+				{
+					res.maxw = Math.max.apply({}, cw);
+					res.minw = Math.min.apply({}, cw);
+				}
+				if(ch.length)
+				{
+					res.maxh = Math.max.apply({}, ch);
+					res.minh = ch.reduce(function(p, c) { return p + c });
+				}
+				
+				return res;
 			},
 
 			widthChanged : function(ev) {
-				if(this.iframe)
-					this.widthChangedIframe();
-				else
+				if(!this.parentNode)
+					return;
+					
+				if(this.script)
 					this.widthChangedScript(ev);
+				else
+					this.widthChangedIframe();
 
 			},
 
 			updateStyles : function(w, h, reason) {
+				var done;
+			
 				this.maxw && (w = Math.min(w, this.maxw));
 				this.minw && (w = Math.max(w, this.minw));
 				this.maxh && (h = Math.min(h, this.maxh));
 				this.minh && (h = Math.max(h, this.minh));
+
+				//this.$.content.style.width = w + "px";
+				//this.$.content.style.height = h + "px";
+
+				console.log("maxw: %s, minw: %s, maxh: %s, minh: %s, ", this.maxw, this.minw, this.maxh, this.minh);
 				
 				if(w == this._prevWidth && h == this._prevHeight)
-				{
-					//clearTimeout(this.lastTimeoutPostfactum);
-					clearTimeout(this.lastTimeoutNonPostfactum);
+					done = true;
 					
-					console.log("finished resize with: ", [w, this._prevWidth, h, this._prevHeight]);
+				this._prevWidth = w;
+				this._prevHeight = h;
+				
+				if(done)
+				{
+					console.log("finished resize with: ", [w, this._prevWidth, h, this._prevHeight]);					
+
+					this.setAttribute('width', this.width = w);
+					this.setAttribute('height', this.height = h);
+				
+					this.style.width = w + "px";
+					this.style.height = h + "px";
 					
 					return this.changed = false;
 				}
-				
-				this.setAttribute('width', this.width = w);
-				this.setAttribute('height', this.height = h);
-				
-				this.$.content.style.width = w + "px";
-				this.style.width = w + "px";
-
-				this.$.content.style.height = h + "px";
-				this.style.height = h + "px";
 
 				if(!this.isInContentEditable)
 					return;
-
-				//cm = parseInt(getComputedStyle(this).marginLeft);
-				//if(!cm)
-				//	this.style.marginLeft = "2px";
 				
 				this.$.cover.style.width = w + "px";
 				this.$.cover.style.height = h + "px";
 
 				this.changed = true;
-
-				this._prevWidth = w;
-				this._prevHeight = h;
 			},
 			
 			attributeChanged : function(name) {
@@ -223,7 +293,8 @@
 			},
 			
 			ready : function() {
-				this.originalInnerHTML = this.$.aspectKeeper.innerHTML;
+				this.set('originalInnerHTML', Polymer.dom(this).innerHTML); //.$.aspectKeeper.innerHTML;
+				this.$.content
 				this.firstAttachment = true;
 			},
 			
@@ -235,7 +306,7 @@
 			setupAccept : function(ev)
 			{
 				this.set('_showDialog', false);
-				this.set('originalInnerHTML', this._originalInnerHTML);
+				//this.set('originalInnerHTML', this._originalInnerHTML);
 				//this.$.setupDialog.close();
 			},
 			
@@ -247,13 +318,32 @@
 				});
 			},
 			
+			originalInnerHTMLChanged : function() {
+				this.firstAttachment = true;
+				this.init();
+				console.log('why??')
+				
+				Polymer.dom(this).innerHTML = this.originalInnerHTML
+			},
+			
 			attached : function() {
+				this.init();
+			},
+			
+			init : function() {
 				var p = this, firstChild, iframe, w, h, rect, mutationObserver, oconfig, cm;
 				// if(!this.firstAttachment)
 				// return;
 
-				var interval, iframe = Polymer.dom(this).querySelector('iframe');
+				//this.$.aspectKeeper.innerHTML = this.originalInnerHTML;
+
+				var interval, iframe, script;
+				
+				script = this.originalInnerHTML.match(/<script/) && Polymer.dom(this).querySelector('script');
+				iframe = this.originalInnerHTML.match(/<iframe/) && Polymer.dom(this).querySelector('iframe');
+				 
 				this.iframe = Polymer.dom(this).childNodes.length && iframe;
+				this.script = script;
 				
 				while(p.nodeType == 1 && (p = Polymer.dom(p).parentNode))
 					if(p.hasAttribute && p.hasAttribute("contenteditable"))
@@ -266,7 +356,8 @@
 				oconfig = {
 					childList : true,
 					subtree : true,
-					characterData : true
+					characterData : true,
+					attributes : true
 				}
 				
 				if(!iframe)
@@ -274,9 +365,12 @@
 								
 				mutationObserver.observe(this.$.content, oconfig);
 
-				//swapChildren(Polymer.dom(this));
+				// Polymer.dom(this).innerHTML = this.originalInnerHTML;
 				
-				swapScripts(this);
+					//swapChildren(Polymer.dom(this));
+				
+				if(this.isInContentEditable)
+					swapScripts(this);
 				
 			    if(this.firstAttachment && typeof(FB) != 'undefined') {
 					// init script must be run by page master:
@@ -298,7 +392,7 @@
 				
 		function swapScripts (d) {
 			var clone, attrs, pn;
-			
+
 			//document.body.appendChild(d);
 			
 			var s = Polymer.dom(d).querySelectorAll('script'), i;
@@ -328,7 +422,7 @@
 			for(i = 0; i < d.childNodes.length; i++)
 				f.appendChild(d.childNodes[i]);
 			
-			d.parentNode.appendChild(f, d);
+			d.appendChild(f, d);
 			//d.parentNode.removeChild(d);
 		}
 	})();
