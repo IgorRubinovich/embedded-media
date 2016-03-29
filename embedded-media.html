@@ -6,14 +6,14 @@
 		#content {
 			position : relative;
 			background : green; /* good for testing */
-			opacity  : 0.5;
+			opacity  : 0.2;
 		}
 		#cover {
 			position : relative;
 			top : 0;
 			left : 0;
 			background : red; /* good for testing */
-			opacity  : 0.5;
+			opacity  : 0.2;
 		}
 		#aspectKeeper {
 			width : 100%;
@@ -148,13 +148,15 @@
 				
 				console.log('width changed, postfactum: ', postfactum);
 				
-				this.$.cover.style.width = childrenSize.maxw + "px"
-				this.$.cover.style.height = childrenSize.maxh + "px"
 				this.style.height = childrenSize.maxh + "px"
 				this.style.width = childrenSize.maxw + "px"
 				this.set('height', childrenSize.maxh);
 				this.set('width', childrenSize.maxw);
 
+				
+				this.$.cover.style.width = childrenSize.maxw + "px"
+				this.$.cover.style.height = childrenSize.maxh + "px"
+				
 				if(this.isInContentEditable)
 				{				
 					this.$.cover.style.width = w + "px";
