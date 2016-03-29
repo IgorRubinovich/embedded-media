@@ -116,7 +116,7 @@
 			_widthChangedScript : function(reason) {
 				var domMutated = reason == "domMutated";
 			
-				//console.log('!! widthChangedScript');
+				// console.log('!! widthChangedScript');
 				var aspect, w, h, bcr = this.$.content.getBoundingClientRect(), maxw, maxh, update, minh, maxh;
 
 				if(domMutated || !(w = this.width || this.getAttribute('width')))
@@ -241,25 +241,23 @@
 				if(!this.parentNode)
 					return;
 					
-				if(this.script)
-					this.widthChangedScript(ev);
-				else
+				if(this.iframe)
 					this.widthChangedIframe();
-
+				else
+					this.widthChangedScript(ev);
 			},
 
 			updateStyles : function(w, h, reason) {
 				var done;
 			
-				this.maxw && (w = Math.min(w, this.maxw));
+				/*this.maxw && (w = Math.min(w, this.maxw));
 				this.minw && (w = Math.max(w, this.minw));
 				this.maxh && (h = Math.min(h, this.maxh));
-				this.minh && (h = Math.max(h, this.minh));
+				this.minh && (h = Math.max(h, this.minh));*/
 
-				//this.$.content.style.width = w + "px";
-				//this.$.content.style.height = h + "px";
 
-				console.log("maxw: %s, minw: %s, maxh: %s, minh: %s, ", this.maxw, this.minw, this.maxh, this.minh);
+
+				/*console.log("maxw: %s, minw: %s, maxh: %s, minh: %s, ", this.maxw, this.minw, this.maxh, this.minh);
 				
 				if(w == this._prevWidth && h == this._prevHeight)
 					done = true;
@@ -268,18 +266,18 @@
 				this._prevHeight = h;
 				
 				if(done)
-				{
-					console.log("finished resize with: ", [w, this._prevWidth, h, this._prevHeight]);					
-
-					this.setAttribute('width', this.width = w);
-					this.setAttribute('height', this.height = h);
+				{*/
+				this.$.content.style.width = w + "px";
+				this.$.content.style.height = h + "px";
 				
-					this.style.width = w + "px";
-					this.style.height = h + "px";
-					
-					return this.changed = false;
-				}
+				console.log("finished resize with: ", [w, this._prevWidth, h, this._prevHeight]);					
 
+				this.setAttribute('width', this.width = w);
+				this.setAttribute('height', this.height = h);
+			
+				this.style.width = w + "px";
+				this.style.height = h + "px";
+				
 				if(!this.isInContentEditable)
 					return;
 				
@@ -345,7 +343,7 @@
 				iframe = this.originalInnerHTML.match(/<iframe/) && Polymer.dom(this).querySelector('iframe');
 				 
 				this.iframe = Polymer.dom(this).childNodes.length && iframe;
-				this.script = script;
+				//this.script = script;
 				
 				while(p.nodeType == 1 && (p = Polymer.dom(p).parentNode))
 					if(p.hasAttribute && p.hasAttribute("contenteditable"))
@@ -358,8 +356,7 @@
 				oconfig = {
 					childList : true,
 					subtree : true,
-					characterData : true,
-					attributes : true
+					characterData : true
 				}
 				
 				if(!iframe)
