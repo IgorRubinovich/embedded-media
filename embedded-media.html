@@ -19,20 +19,27 @@
 			width : 100%;
 			height : 0;
 		}
-		textarea : {
+		textarea {
 			margin : 20px;
+			padding : 2px;
 		}
+
 	</style>
 	<template>
 		<!-- displayed content -->
 		<span id="content"><div id="aspectKeeper"><content></content></div><div id="cover"></div></span>
 		
 		<!-- setup dialaog -->
-		<template is="dom-if" if="{{ _showDialog }}">
-			<paper-dialog id="setupDialog">
-				<textarea>{{ _originalInnerHTML }}</textarea>
-				<embedded-media width="100">{{ _originalInnerHTML }}</embedded-media>
+		<template is="dom-if" if="{{ _showPreview }}">
+			<paper-dialog id="setupDialog" fit>
 				<div>
+				<textarea id="htmlInputBox" rows="6" cols="50" on-change="_updateOriginalInnerHTML"> </textarea>
+				<!-- embedded-media id="preview" preview width="100"></embedded-media -->
+				<div>
+					<div id="preview"></div>
+				</div>
+				<div>
+					<paper-button on-tap="_updateOriginalInnerHTML">Preview</paper-button>
 					<paper-button on-tap="setupCancel">Cancel</paper-button>
 					<paper-button on-tap="setupAccept">Accept</paper-button>
 				</div>
@@ -46,39 +53,48 @@
 		Polymer({
 			is : 'embedded-media',
 			
-			properties : [
-				{ 
-					name : "originalInnerHTML",
+			properties : {
+				originalInnerHTML : { 
 					type : String,
-					observer : "originalInnerHTMLChanged"
+					notify : true
 				},				
-				{ 
-					name : "_originalInnerHTML",
-					type : String
+				_originalInnerHTML : { 
+					type : String,
+					notify : true
 				},
-				{ 
-					name : "width",
+				preview : { 
+					type : Boolean,
+					value : false,
+					notify : true
+				},				
+				_showPreview : { 
+					type : Boolean,
+					value : false,
+					notify : true
+				},
+				height : { 
+					reflectToAttribute: true,
 					type : Number,
 					notify : true,
 					observer : "widthChanged"
 				},
-				{ 
-					name : "height",
+				width : { 
+					reflectToAttribute: true,
 					type : Number,
 					notify : true,
 					observer : "widthChanged"
 				},
-				{ 
-					name : "aspect",
+				aspect : { 
+					reflectToAttribute: true,
 					type : Number,
 					notify : true,
+					observer : "widthChanged"
 				},
-				{
-					name : "_showDialog",
-					type : Boolean
+				name : { 
+					type : Number,
+					notify : true
 				}
-				
-			],
+			},
 			
 			widthChangedIframe : function() {
 				//console.log('!! widthChangedIframe');
@@ -96,7 +112,7 @@
 				if(!this.aspect && !(this.aspect = this.getAttribute('aspect')))
 				{
 					this.aspect = aspect;
-					this.setAttribute('aspect', aspect);
+					this.set('aspect', aspect);
 				}
 				else
 					aspect = this.aspect;
@@ -143,24 +159,18 @@
 				
 				childrenSize = this.sizeFromChildNodes();
 				
-				//if(ev == 'attributeChanged')
-				//{
-				
-				console.log('width changed, postfactum: ', postfactum);
-				
 				this.style.height = childrenSize.maxh + "px"
 				this.style.width = childrenSize.maxw + "px"
 				this.set('height', childrenSize.maxh);
 				this.set('width', childrenSize.maxw);
-
 				
-				this.$.cover.style.width = childrenSize.maxw + "px"
-				this.$.cover.style.height = childrenSize.maxh + "px"
+				this.$.content.style.width = childrenSize.maxw + "px"
+				this.$.content.style.height = childrenSize.maxh + "px"
 				
-				if(this.isInContentEditable)
+				if(this.isInContentEditable) // || this.preview)
 				{				
-					this.$.cover.style.width = w + "px";
-					this.$.cover.style.height = h + "px";
+					this.$.cover.style.width = childrenSize.maxw + "px"; //w + "px";
+					this.$.cover.style.height = childrenSize.maxh + "px"; //h + "px";
 				}
 				
 				if(!postfactum)
@@ -170,51 +180,15 @@
 						this.widthChangedScript(ev, true);
 					}.bind(this), 1000);
 				}
-				//}
-					//this.updateStyles(this.$.content.scrollWidth, this.$.content.scrollHiehgt)
+		
+				this.fire('change', ev);
+
+				//this.updateStyles(this.$.content.scrollWidth, this.$.content.scrollHiehgt)
 				
 				return
-				
-				if(this.lastTimeout && !postfactum)
-					return;
+			},
 			
-				console.log("postfactum: %s, changed: %s, reason: %s", postfactum, this.changed, ev);
-					
-				clearTimeout(this.lastTimeout);
-				this.lastTimeout = null;
-
-				if(!postfactum)
-				{
-					if(ev == 'attributeChanged')
-						this.maxw = this.minw = this.maxh = this.minh = 0;
-					
-					console.log('attribute changed non-postfactum');
-					
-					clearTimeout(this.lastTimeout);
-					this.lastTimeout = setTimeout(function () { 
-						this.widthChangedScript(ev, 1);
-					}.bind(this), 10); //'domMutated' ? 100 : 300);
-				}
-				
-				if(postfactum == 1)
-				{
-					this.sizeFromChildNodes();
-
-					clearTimeout(this.lastTimeoutPF);
-					this.lastTimeoutPF = setTimeout(function () { 
-						this.widthChangedScript(ev, 2); 
-					}.bind(this), 50 ); // check one more time because observer seems not to fire between last change and actual relayout
-
-					if(postfactum == 1)
-					{
-						clearTimeout(this.lastTimeoutPF2);
-						this.lastTimeoutPF2 = setTimeout(function () { 
-							this.widthChangedScript(ev, 3);
-						}.bind(this), 1000); //'domMutated' ? 100 : 300);
-					}
-				}
-				
-				this._widthChangedScript(ev);
+			sizeFromAtrributes : function() {
 			},
 			
 			sizeFromChildNodes : function() {
@@ -238,6 +212,12 @@
 			},
 
 			widthChanged : function(ev) {
+				if(!this.isInitialized)
+					return;
+				
+				if(!this.isInContentEditable && !this.preview)
+					return;
+				
 				if(!this.parentNode)
 					return;
 					
@@ -247,95 +227,147 @@
 					this.widthChangedScript(ev);
 			},
 
-			updateStyles : function(w, h, reason) {
+			updateStyles : function(w, h) {
 				var done;
-			
-				/*this.maxw && (w = Math.min(w, this.maxw));
-				this.minw && (w = Math.max(w, this.minw));
-				this.maxh && (h = Math.min(h, this.maxh));
-				this.minh && (h = Math.max(h, this.minh));*/
 
+				///console.log("finished resize with: ", [w, this._prevWidth, h, this._prevHeight]);
 
-
-				/*console.log("maxw: %s, minw: %s, maxh: %s, minh: %s, ", this.maxw, this.minw, this.maxh, this.minh);
-				
-				if(w == this._prevWidth && h == this._prevHeight)
-					done = true;
-					
-				this._prevWidth = w;
-				this._prevHeight = h;
-				
-				if(done)
-				{*/
 				this.$.content.style.width = w + "px";
 				this.$.content.style.height = h + "px";
 				
-				console.log("finished resize with: ", [w, this._prevWidth, h, this._prevHeight]);					
-
-				this.setAttribute('width', this.width = w);
-				this.setAttribute('height', this.height = h);
+				this.set('width',  w);
+				this.set('height',  h);
+				//this.setAttribute('width', this.width = w);
+				//this.setAttribute('height', this.height = h);
 			
 				this.style.width = w + "px";
 				this.style.height = h + "px";
 				
 				if(!this.isInContentEditable)
 					return;
-				
+
 				this.$.cover.style.width = w + "px";
 				this.$.cover.style.height = h + "px";
-
-				this.changed = true;
 			},
 			
 			attributeChanged : function(name) {
 				if(name == 'width')
 					this.widthChanged('attributeChanged');
 			},
-			
+
 			ready : function() {
-				this.set('originalInnerHTML', Polymer.dom(this).innerHTML); //.$.aspectKeeper.innerHTML;
-				this.$.content
 				this.firstAttachment = true;
 			},
 			
 			setupCancel : function(ev) {
-				this.set('_showDialog', false);
-				this.$.setupDialog.close();
+				this.$$('#setupDialog').close();
+				this.async(function() {
+					this.connectObserver();
+				});
 			},
 			
 			setupAccept : function(ev)
 			{
-				this.set('_showDialog', false);
-				//this.set('originalInnerHTML', this._originalInnerHTML);
-				//this.$.setupDialog.close();
+				this.originalInnerHTML = this._originalInnerHTML;
+				this.originalInnerHTMLChanged();
+				this.$$('#setupDialog').close();
+
+				this.connectObserver();
 			},
 			
 			setup : function() {
-				this.set('_originalInnerHTML', this.originalInnerHTML);
-				this.set('_showDialog', true);				
+				if(this.preview)
+					return;
+
+				this.disconnectObserver();
+				this.set('_showPreview', true);
+
 				this.async(function() {
 					this.$$('#setupDialog').open();
+					this.set('_originalInnerHTML', this.originalInnerHTML);
+					this._originalInnerHTMLChanged();
+					this.$$('#htmlInputBox').focus();
+					//this.$$("#preview").innerHTML = "<embedded-media>" + this._originalInnerHTML + "</embedded-media>";
 				});
-			},
-			
-			originalInnerHTMLChanged : function() {
-				this.firstAttachment = true;
-				this.init();
-				console.log('why??')
 				
-				Polymer.dom(this).innerHTML = this.originalInnerHTML
 			},
 			
 			attached : function() {
+				this.originalInnerHTML = Polymer.dom(this).innerHTML; //.$.aspectKeeper.innerHTML;
 				this.init();
 			},
 			
+			_updateOriginalInnerHTML : function(ev) {
+				if(ev)
+				{
+					ev.stopPropagation();
+					ev.stopImmediatePropagation();
+					ev.preventDefault();
+				}
+
+				if(this._originalInnerHTML == this.$$('#htmlInputBox').value)
+					return;
+
+				this._originalInnerHTML = this.$$('#htmlInputBox').value;
+				this._originalInnerHTMLChanged();				
+			},
+
+			_originalInnerHTMLChanged : function() {
+				this.$$("#preview").innerHTML = "<embedded-media preview>" + this._originalInnerHTML + "</embedded-media>";
+
+				Polymer.dom.flush();
+
+				this.$$('#htmlInputBox').value = this._originalInnerHTML;
+				this.$$('#htmlInputBox').focus();
+				this.$$("#preview").firstChild.addEventListener('change', function() {
+					clearTimeout(this._previewTimeout);
+					this._previewTimeout = setTimeout(function() {
+						var sd = this.$$('#setupDialog');
+						sd.refit();
+						sd.center();
+					}.bind(this), 500);
+				}.bind(this));
+			},
+			
+			originalInnerHTMLChanged : function() {
+				var p, clone;
+				
+				if(p = this.parentNode)
+				{
+					clone = Polymer.dom(this).cloneNode(false);
+					Polymer.dom(clone).innerHTML = this.originalInnerHTML;
+					this.parentNode.insertBefore(clone, this);
+					this.parentNode.removeChild(this);
+					return;
+				}
+					
+				this.disconnectObserver();
+				this.firstAttachment = true;
+				Polymer.dom(this).innerHTML = this.originalInnerHTML
+				//this.init();
+			},
+			
+			connectObserver : function()
+			{
+				var oconfig = {
+					childList : true,
+					subtree : true,
+					characterData : true
+				}
+				
+				if(!this.iframe)
+					oconfig.attributes = true;
+								
+				this.mutationObserver.observe(this.$.content, oconfig);
+			},
+
+			disconnectObserver : function()
+			{
+				this.mutationObserver.disconnect();
+			},
+
 			init : function() {
 				var p = this, firstChild, iframe, w, h, rect, mutationObserver, oconfig, cm;
-				// if(!this.firstAttachment)
-				// return;
-
-				//this.$.aspectKeeper.innerHTML = this.originalInnerHTML;
 
 				var interval, iframe, script;
 				
@@ -343,44 +375,36 @@
 				iframe = this.originalInnerHTML.match(/<iframe/) && Polymer.dom(this).querySelector('iframe');
 				 
 				this.iframe = Polymer.dom(this).childNodes.length && iframe;
-				//this.script = script;
 				
-				while(p.nodeType == 1 && (p = Polymer.dom(p).parentNode))
-					if(p.hasAttribute && p.hasAttribute("contenteditable"))
-						this.isInContentEditable = true;
-				
-				mutationObserver = new MutationObserver(function(mr) {
-					this.widthChanged('domMutated');
-				}.bind(this));
-				
-				oconfig = {
-					childList : true,
-					subtree : true,
-					characterData : true
-				}
-				
-				if(!iframe)
-					oconfig.attributes = true;
-								
-				mutationObserver.observe(this.$.content, oconfig);
+				if(!this.preview)
+					while(p.nodeType == 1 && (p = Polymer.dom(p).parentNode))
+						if(p.hasAttribute && p.hasAttribute("contenteditable"))
+							this.isInContentEditable = true;
 
-				// Polymer.dom(this).innerHTML = this.originalInnerHTML;
+				if(!this.mutationObserver)
+					this.mutationObserver = new MutationObserver(function(mr) {
+						this.widthChanged('domMutated');
+					}.bind(this));
+					
+				this.connectObserver();
 				
-					//swapChildren(Polymer.dom(this));
-				
-				if(this.isInContentEditable)
-					swapScripts(this);
-				
-			    if(this.firstAttachment && typeof(FB) != 'undefined') {
-					// init script must be run by page master:
-					// (function(d, s, id) { var js, fjs = d.getElementsByTagName(s)[0]; if (d.getElementById(id)) return; js = d.createElement(s); js.id = id; js.src = "//connect.facebook.net/en_US/all.js#xfbml=1"; fjs.parentNode.insertBefore(js, fjs); }(document, 'script', 'facebook-jssdk'));
-					FB.XFBML.parse();
-				}
+				if(this.width || this.height) 
+					this.updateStyles(this.width, this.height);
 				
 				Polymer.dom.flush();
-				this.widthChanged();
+
+				swapScripts(this);
+						
+			    if(this.firstAttachment && typeof(FB) != 'undefined') {
+					// for FB embeds to work init script must be run by page master:
+					// (function(d, s, id) { var js, fjs = d.getElementsByTagName(s)[0]; if (d.getElementById(id)) return; js = d.createElement(s); js.id = id; js.src = "//connect.facebook.net/en_US/all.js#xfbml=1"; fjs.parentNode.insertBefore(js, fjs); }(document, 'script', 'facebook-jssdk'));
+					FB.XFBML.parse(this.$.content);
+				}
 				
 				this.firstAttachment = false;
+				
+				this.isInitialized = true;
+				this.widthChanged();
 			},
 			
 			domChanged : function() {
@@ -391,8 +415,6 @@
 				
 		function swapScripts (d) {
 			var clone, attrs, pn;
-
-			//document.body.appendChild(d);
 			
 			var s = Polymer.dom(d).querySelectorAll('script'), i;
 			
@@ -413,7 +435,6 @@
 			}
 			
 			return s.length;
-			//document.body.removeChild(d);
 		}
 		
 		function swapChildren(d, skip) {
