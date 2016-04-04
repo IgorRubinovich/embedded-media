@@ -16,12 +16,15 @@
 			/* background : green; *//* good for testing */
 		}
 		#cover {
-			position : relative;
+			position : absolute;
 			top : 0;
 			left : 0;
-			/* background-color : blue; *//* good for testing */
 			background-image : url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc4JyBoZWlnaHQ9JzgnPgogIDxyZWN0IHdpZHRoPSc4JyBoZWlnaHQ9JzgnIGZpbGw9JyNmZmYnLz4KICA8cGF0aCBkPSdNMCAwTDggOFpNOCAwTDAgOFonIHN0cm9rZS13aWR0aD0nMC41JyBzdHJva2U9JyNhYWEnLz4KPC9zdmc+Cg=="); ;
+			x-background-color : blue; /* good for testing */
 			opacity  : 0.2;
+		}
+		#sizeContainer {
+			display : inline-block;
 		}
 		#aspectKeeper {
 			width : 100%;
@@ -37,7 +40,8 @@
 		<!-- displayed content -->
 
 		<div id="sizeContainer">
-			<div id="aspectKeeper"><div id="content"></div></div><div id="cover"></div>
+			<div id="aspectKeeper"><div id="content"></div></div>
+			<div id="cover"></div>
 		</div>
 
 		<!-- div style="display : none" id="autocontent">
@@ -256,7 +260,7 @@
 				this.set('_showPreview', true);
 
 				this.async(function() {
-					this.$$('#setupDialog').assignParentResizeable
+					this.$$('#setupDialog').assignParentResizable(window);
 					this.$$('#setupDialog').open();
 					this.set('_originalInnerHTML', this.originalInnerHTML);
 					this._originalInnerHTMLChanged();
@@ -361,14 +365,14 @@
 			connectObserver : function(withAttributes)
 			{
 				new ResizeSensor(this.$.sizeContainer, function(info) {
-					if(this.track)
-						console.log('resizeSensor fired:', info);
+					//if(this.track)
+					//	console.log('resizeSensor fired:', info);
 					this.sizeChanged();
 				}.bind(this));
 				
 				Polymer.dom(this.$.content).observeNodes(function(info) {
-					if(this.track)
-						console.log('observeNodes fired:', info);
+					//if(this.track)
+					//	console.log('observeNodes fired:', info);
 					this.sizeChanged();
 				}.bind(this));
 			},
