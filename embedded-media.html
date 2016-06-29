@@ -5,66 +5,8 @@
 
 <dom-module id="embedded-media">
 	<style>
-		:host {
-			display : inline-block;
-		}
-		#content {
-			display : inline-block;
-			position : relative;
-			top : 0;
-			left : 0;
-			/* background : green; *//* good for testing */
-		}
-		#cover {
-			position : absolute;
-			top : 0;
-			left : 0;
-			background-image : url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc4JyBoZWlnaHQ9JzgnPgogIDxyZWN0IHdpZHRoPSc4JyBoZWlnaHQ9JzgnIGZpbGw9JyNmZmYnLz4KICA8cGF0aCBkPSdNMCAwTDggOFpNOCAwTDAgOFonIHN0cm9rZS13aWR0aD0nMC41JyBzdHJva2U9JyNhYWEnLz4KPC9zdmc+Cg=="); ;
-			x-background-color : blue; /* good for testing */
-			opacity  : 0.2;
-		}
-		#sizeContainer {
-			display : inline-block;
-		}
-		#aspectKeeper {
-			width : 100%;
-			height : 0;
-		}
-		textarea {
-			margin : 20px;
-			padding : 2px;
-		}
-
 	</style>
-	<template>
-		<!-- displayed content -->
-
-		<div id="sizeContainer">
-			<div id="aspectKeeper"><div id="content"></div></div>
-			<div id="cover"></div>
-		</div>
-
-		<!-- div style="display : none" id="autocontent">
-			<content></content>
-		</div -->
-		
-		<!-- setup dialaog -->
-		<template is="dom-if" if="{{ _showPreview }}">
-			<paper-dialog id="setupDialog" fit>
-				<div>
-				<textarea id="htmlInputBox" rows="6" cols="50" on-change="_updateOriginalInnerHTML"> </textarea>
-				<!-- embedded-media id="preview" preview width="100"></embedded-media -->
-				<div id="previewWrapper">
-					<div id="preview"></div>
-				</div>
-				<div>
-					<paper-button on-tap="_updateOriginalInnerHTML">Preview</paper-button>
-					<paper-button on-tap="setupCancel">Cancel</paper-button>
-					<paper-button on-tap="setupAccept">Accept</paper-button>
-				</div>
-			</paper-dialog>
-		</template>
-	</template>
+	<template><content></content></template>
 </dom-module>
 
 <script>
@@ -73,312 +15,40 @@
 			is : 'embedded-media',
 			
 			properties : {
-				originalInnerHTML : { 
-					type : String,
-					notify : true,
-					observer : "originalInnerHTMLChanged"
-				},				
-				_originalInnerHTML : { 
-					type : String,
-					notify : true
-				},
-				preview : { 
-					type : Boolean,
-					value : false,
-					notify : true
-				},				
-				_showPreview : { 
-					type : Boolean,
-					value : false,
-					notify : true
-				},
-				height : { 
-					// reflectToAttribute: true,
-					type : Number,
-					notify : true,
-					observer : "sizeChangedAttr"
-				},
-				width : { 
-					//reflectToAttribute: true,
-					type : Number,
-					notify : true,
-					observer : "sizeChangedAttr"
-				},
-				aspect : { 
-					//reflectToAttribute: true,
-					type : Number,
-					notify : true,
-					observer : "sizeChangedAttr"
-				},
-				name : { 
-					type : Number,
-					notify : true
-				},
-				track : { 
-					type : Boolean,
-					notify : true
-				}
-			},
-			
-			sizeChangedIframe : function() {
-				var w, h,
-					aspect = this.aspect,  
-					bcr = this.$.content.getBoundingClientRect();
-				
-				w = this.iframe.width || bcr.width || this.$.content.scrollWidth;
-				h = this.iframe.height || bcr.height || this.$.content.scrollHeight;
-
-				if(!aspect)
-					this.set('aspect', aspect = h / w);
-
-				if(this.width)
-					w = this.width;
-				if(this.height)
-					h = this.height;
-					
-				h = w * aspect;
-				
-				//console.log('iframe dims: ', w, h);
-				
-				this.iframe.width = w;
-				this.iframe.height = h;
-
-				this.iframe.setAttribute('width', w);
-				this.iframe.setAttribute('height', h);
-				
-				if(!this.isInContentEditable)
-					this.$.aspectKeeper.style.paddingBottom = aspect*100 + "%";
-				
-				this.updateStyles(w, h);
-			},
-			
-			sizeChangedScript : function(ev, debounced) {
-				var w, h, cw, ch, cbr, childrenSize;
-
-				if(!debounced)
-				{
-					this.updateStyles(this.width, this.height, true);
-					debounce(this.sizeChangedScript.bind(this, ev, true), 1000, "sizeChangedScript", this);
-
-					return;
-				}
-
-				if(!this.isInContentEditable)
-					this.updateStyles(this.width, this.height)
-					
-				childrenSize = this.sizeFromChildNodes();			
-				this.updateStyles(childrenSize.maxw, childrenSize.maxh);
-			},
-			
-			updateStyles : function(w, h, force) {
-				var done;
-
-				//console.log('changing size to: %s %s, force: %s', w, h, force);
-				
-				if(w == this.width && h == this.height && !force)
-					return;
-				
-				if(!this.originalInnerHTML)
-					return;
-
-				//if(force)
-				//	console.log('in: %s; actual resize from %s %s to %s %s', this.originalInnerHTML.trim().substring(0, 10), this.width, this.height, w, h);
-				
-				this.width = w;
-				this.height = h;
-				this.style.width = w + "px";
-				this.style.height = h + "px";				
-
-				this.$.content.style.width = w + "px";
-				this.$.content.style.height = h + "px";
-
-				this.fire('style-change');
-				
-				if(!this.isInContentEditable)
-					return;
-
-				this.$.cover.style.width = w + "px";
-				this.$.cover.style.height = h + "px";				
-			},
-			
-			sizeFromAtrributes : function() {
-			},
-			
-			sizeFromChildNodes : function() {
-				var res = {}, 
-					childNodes = this.$.content.childNodes,
-					cw =  Array.prototype.filter.call(childNodes, function(el){ return el.clientWidth }).map(function(el) { 
-						return el.clientHeight && el.clientWidth;
-					}),
-					ch =  Array.prototype.filter.call(childNodes, function(el){ return el.clientHeight }).map(function(el) { 
-						return el.clientHeight; // - Number(el.style.marginTop.replace(/px/,'')) - Number(el.style.marginBottom.replace(/px/,''))
-					});
-
-				if(cw.length)
-				{
-					res.maxw = Math.max.apply({}, cw);
-					res.minw = Math.min.apply({}, cw);
-				}
-				if(ch.length)
-				{
-					res.maxh = Math.max.apply({}, ch);
-					res.minh = ch.reduce(function(p, c) { return p + c });
-				}
-				
-				return res;
 			},
 
-			sizeChanged : function(reason) {
-				if(this.iframe)
-					this.sizeChangedIframe();
-				else
-					this.sizeChangedScript(reason);
-			},
-
-			sizeChangedAttr : function() {
-				this.updateStyles(this.width, this.height, true)
-				debounce(this.sizeChanged.bind(this, 'attr-debounce'), 200, "sizeChangedAttr", this);
-			},
-			
-			setupCancel : function(ev) {
-				this.$$('#setupDialog').close();
-				this.connectObserver();
-			},
-			
-			setupAccept : function(ev)
-			{
-				this.set('originalInnerHTML', this._originalInnerHTML);
-				this.$$('#setupDialog').close();
-
-				this.connectObserver();
-			},
-			
-			setup : function() {
-				if(this.preview)
-					return;
-					
-				this.set('_showPreview', true);
-
-				this.async(function() {
-					this.$$('#setupDialog').assignParentResizable(window);
-					this.$$('#setupDialog').open();
-					this.set('_originalInnerHTML', this.originalInnerHTML);
-					this._originalInnerHTMLChanged();
-					this.$$('#htmlInputBox').focus();
-				});
-				
-			},
-			
 			created : function() { 
 	
 			},
 			
 			ready : function() {
-				//this.connectObserver();
 			},
 			
-			attached : function() {			
-				var p = this;
-				
-				if(!this.preview)
-					while(p.nodeType == 1 && (p = Polymer.dom(p).parentNode))
-						if(p.hasAttribute && p.hasAttribute("contenteditable"))
-							this.isInContentEditable = true;
+			attached : function() {	
+				this.sizeFromContainer();
+				ResizeSensor(Polymer.dom(this).parentNode, function() { 
+					this.sizeFromContainer();
+				}.bind(this))	
+			},
+			
+			sizeFromContainer : function() {
+				var p = Polymer.dom(this).parentNode,
+					bcr = p.getBoundingClientRect(),
+					content = Polymer.dom(this).firstChild,
+					w, h;
 
-				this.async(function() { 
-					this.originalInnerHTML = Polymer.dom(this).innerHTML; 
-				});
-			},
-			
-			_updateOriginalInnerHTML : function(ev) {
-				if(ev)
+				if(content.tagName == 'IFRAME' && bcr.width)
 				{
-					ev.stopPropagation();
-					ev.stopImmediatePropagation();
-					ev.preventDefault();
+					w = bcr.width;
+					h =  w * content.height / content.width;
+					
+					content.width = w;
+					content.height = h;
 				}
-				
-				if(this._originalInnerHTML == this.$$('#htmlInputBox').value)
-					return;
+			}
 
-				this._originalInnerHTML = this.$$('#htmlInputBox').value;
-				this._originalInnerHTMLChanged();				
-			},
+		});
 
-			_originalInnerHTMLChanged : function() {
-				this.$$("#preview").innerHTML = "<embedded-media preview>" + this._originalInnerHTML + "</embedded-media>";
-
-				Polymer.dom.flush();
-
-				this.$$('#htmlInputBox').value = this._originalInnerHTML;
-				this.$$('#htmlInputBox').focus();
-				this.$$("#preview").firstChild.addEventListener('style-change', function() {
-					debounce(function() {
-						var sd = this.$$('#setupDialog');
-						sd.refit();
-						Polymer.dom.flush();
-						this.async(function() {
-							sd.center();
-							Polymer.updateStyles();
-							Polymer.dom.flush();
-						});
-					}.bind(this), 1000, "previewTimeout", this);
-				}.bind(this));
-			},
-			
-			originalInnerHTMLChanged : function() {
-				var firstChild, iframe, w, h, rect, mutationObserver, oconfig, cm, clone, iframe, script, contentRoot;
-
-				contentRoot = this.$.content;
-
-				this.aspect = null;
-
-				contentRoot.innerHTML = this.originalInnerHTML;
-				this.connectObserver();
-				
-				script = this.originalInnerHTML.match(/<script/) && contentRoot.querySelector('script'); //this.$.content.querySelector('script'); //
-				iframe = this.originalInnerHTML.match(/<iframe/) && contentRoot.querySelector('iframe'); //this.$.content.querySelector('iframe'); //
-				 
-				this.iframe = contentRoot.childNodes.length && iframe;
-
-				Polymer.dom.flush();
-
-				//if(this.width || this.height)
-					
-				//if(this.isInContentEditable)
-				this.async(function() {
-					this.updateStyles(this.width, this.height, true);
-
-					swapChildren(contentRoot);
-					swapScripts(contentRoot);
-					
-					// for FB embeds to work init script must be run by page master:
-					// (function(d, s, id) { var js, fjs = d.getElementsByTagName(s)[0]; if (d.getElementById(id)) return; js = d.createElement(s); js.id = id; js.src = "//connect.facebook.net/en_US/all.js#xfbml=1"; fjs.parentNode.insertBefore(js, fjs); }(document, 'script', 'facebook-jssdk'));
-					if(typeof(FB) != 'undefined' && /fb-root/.test(this.originalInnerHTML))
-						FB.XFBML.parse(contentRoot, this.sizeChanged.bind(this));
-					
-					//debounce(this.sizeChanged.bind(this), 2000);
-					this.sizeChanged.bind(this);
-				});
-			},
-			
-			connectObserver : function(withAttributes)
-			{
-				new ResizeSensor(this.$.sizeContainer, function(info) {
-					//if(this.track)
-					//	console.log('resizeSensor fired:', info);
-					this.sizeChanged();
-				}.bind(this));
-				
-				Polymer.dom(this.$.content).observeNodes(function(info) {
-					//if(this.track)
-					//	console.log('observeNodes fired:', info);
-					this.sizeChanged();
-				}.bind(this));
-			},
-		})
-		
-				
 		function swapScripts (d) {
 			var clone, attrs, pn;
 			
@@ -410,33 +80,5 @@
 			
 			d.appendChild(f, d);
 		}
-		
-		//var debounceCache = {};
-		function debounce(f, ms, prevTimeout, scope) {
-			var save, t, refName = prevTimeout, debounceCache;
-			
-			save = typeof refName == 'string';
-			
-			if(save)
-			{
-				if(!scope)
-					alert('пиздец!')
-				if(!(debounceCache = scope.__debounceCache))
-					scope.__debounceCache = debounceCache = {};
-			}
-			
-			if(save)
-				prevTimeout = debounceCache[prevTimeout];
-
-			if(prevTimeout)
-				clearTimeout(prevTimeout);
-
-			t = setTimeout(f, ms);
-			
-			if(save)
-				debounceCache[refName] = t;
-
-			return t;
-		};
 	})();
 </script>
