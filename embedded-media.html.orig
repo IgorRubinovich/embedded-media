@@ -42,9 +42,12 @@
 					content = Polymer.dom(this).firstChild,
 					w, h;
 
+<<<<<<< HEAD
+=======
 				if(!p)
 					return;
 					
+>>>>>>> temp
 				if(content.tagName == 'IFRAME')
 				{
 					w = this.availableWidth();
