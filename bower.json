@@ -1,0 +1,37 @@
+{
+  "name": "embedded-media",
+  "main": "embedded-media.html",
+  "version": "0.5",
+  "authors": [
+    "Igor Rubinovich <igor.rubinovih@gmail.com>"
+  ],
+  "description": "A responsive embed element for Polymer 1.0",
+  "keywords": [
+    "embed",
+	"media",
+	"responsive",
+    "web-component",
+    "web-components",
+    "polymer"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "webcomponentsjs": "~0.7.7",
+    "polymer": "~1.0.8",
+    "css-element-queries": "git@github.com:marcj/css-element-queries.git#~0.3.2"
+  },
+  "devDependencies": {
+    "iron-component-page": "PolymerElements/iron-component-page#~1.0.5",
+    "web-component-tester": "*"
+  },
+  "resolutions": {
+    "polymer": "~1.1.2"
+  }
+}

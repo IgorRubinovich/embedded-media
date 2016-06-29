@@ -1,0 +1,136 @@
+<!--script src="../javascript-detect-element-resize/javascript-detect-element-resize.js"></script-->
+<script src="../css-element-queries/src/ResizeSensor.js"></script>
+<!-- script src="../ResizeSensor/ResizeSensorApi.js"></script -->
+
+
+<dom-module id="embedded-media">
+	<style>
+	</style>
+	<template><content></content></template>
+</dom-module>
+
+<script>
+	(function () {
+		Polymer({
+			is : 'embedded-media',
+			
+			properties : {
+				width : {
+					observer : 'widthChanged'
+				}
+			},
+
+			created : function() { 
+	
+			},
+			
+			ready : function() {
+			},
+			
+			attached : function() {	
+				this.sizeFromContainer();
+				ResizeSensor(Polymer.dom(this).parentNode, this.sizeFromContainer.bind(this));
+				window.addEventListener('resize', this.sizeFromContainer.bind(this));
+			},
+			
+			sizeFromContainer : function() {
+				this.debounce('resizeMedia', this._sizeFromContainer, 50);
+			},
+			
+			_sizeFromContainer : function() {
+				var p = Polymer.dom(this).parentNode,
+					content = Polymer.dom(this).firstChild,
+					w, h;
+
+				if(!p)
+					return;
+					
+				if(content.tagName == 'IFRAME')
+				{
+					w = this.availableWidth();
+					h =  w * content.height / content.width;
+					
+					content.width = w;
+					content.height = h;
+				}
+				
+				this.set('width', w)
+			},
+			
+			widthChanged : function() {
+				if(!this.resizedBefore)
+					return this.resizedBefore = true;
+				
+				this.debounce('refresh', function() {
+					var p, cl;
+					p = Polymer.dom(this).parentNode;
+					
+					if(!p)
+						return;
+
+					p = Polymer.dom(p);
+					cl = Polymer.dom(this).cloneNode(true);
+					
+					p.insertBefore(cl, this);
+					Polymer.dom.flush();
+					p.removeChild(this);
+					Polymer.dom.flush();
+				}, 100);
+			},
+			
+			availableWidth : function() {
+				var p, bcr, m;
+				
+				p = Polymer.dom(this).parentNode;
+				if(!p)
+					return;
+				
+				bcr = p.getBoundingClientRect();
+				m = p.offsetWidth;
+				
+				do { 
+					m = Math.min(p.offsetWidth, m);
+					p = Polymer.dom(p).parentNode; 
+				} while(p && p != document);
+				return m;
+			}
+
+		});
+
+		function swapScripts (d) {
+			var clone, attrs, pn;
+			
+			var s = Polymer.dom(d).querySelectorAll('script'), i;
+			
+			for(i = 0; i < s.length; i++)
+			{
+				clone = document.createElement('script');
+				clone.appendChild(document.createTextNode(s[i].textContent));
+				attrs = Array.prototype.slice.call(s[i].attributes);
+				attrs.forEach(function(a) { clone.setAttribute(a.name, a.value); });
+
+				pn = Polymer.dom(s[i]).parentNode; //Polymer.dom(s[i]).parentNode;
+
+				if(!pn)
+					return;
+
+				do { 
+					m = Math.min(p.offsetWidth, m), p = p.parentNode; 
+				} while(p && p != document)
+					
+				Polymer.dom(pn).insertBefore(clone, s[i]);
+				Polymer.dom(pn).removeChild(s[i]);
+			}
+			
+			return s.length;
+		}
+		
+		function swapChildren(d, skip) {
+			var i, f = document.createDocumentFragment();;
+			for(i = 0; i < d.childNodes.length; i++)
+				f.appendChild(d.childNodes[i]);
+			
+			d.appendChild(f, d);
+		}
+	})();
+</script>

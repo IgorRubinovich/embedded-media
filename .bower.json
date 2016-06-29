@@ -1,0 +1,47 @@
+{
+  "name": "embedded-media",
+  "main": "embedded-media.html",
+  "authors": [
+    "Igor Rubinovich <igor.rubinovih@gmail.com>"
+  ],
+  "description": "A responsive embed element for Polymer 1.0",
+  "keywords": [
+    "embed",
+    "media",
+    "responsive",
+    "web-component",
+    "web-components",
+    "polymer"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "webcomponentsjs": "~0.7.7",
+    "polymer": "~1.0.8",
+    "css-element-queries": "git@github.com:marcj/css-element-queries.git#~0.3.2"
+  },
+  "devDependencies": {
+    "iron-component-page": "PolymerElements/iron-component-page#~1.0.5",
+    "web-component-tester": "*"
+  },
+  "resolutions": {
+    "polymer": "~1.1.2"
+  },
+  "homepage": "https://github.com/IgorRubinovich/embedded-media",
+  "_release": "bfa27253df",
+  "_resolution": {
+    "type": "branch",
+    "branch": "master",
+    "commit": "bfa27253dfeaaaaa01bba1b536c04eae2a7f98e4"
+  },
+  "_source": "git@github.com:IgorRubinovich/embedded-media.git",
+  "_target": "*",
+  "_originalSource": "git@github.com:IgorRubinovich/embedded-media.git",
+  "_direct": true
+}
