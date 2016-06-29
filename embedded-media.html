@@ -15,6 +15,9 @@
 			is : 'embedded-media',
 			
 			properties : {
+				width : {
+					observer : 'widthChanged'
+				}
 			},
 
 			created : function() { 
@@ -26,25 +29,67 @@
 			
 			attached : function() {	
 				this.sizeFromContainer();
-				ResizeSensor(Polymer.dom(this).parentNode, function() { 
-					this.sizeFromContainer();
-				}.bind(this))	
+				ResizeSensor(Polymer.dom(this).parentNode, this.sizeFromContainer.bind(this));
+				window.addEventListener('resize', this.sizeFromContainer.bind(this));
 			},
 			
 			sizeFromContainer : function() {
+				this.debounce('resizeMedia', this._sizeFromContainer, 50);
+			},
+			
+			_sizeFromContainer : function() {
 				var p = Polymer.dom(this).parentNode,
-					bcr = p.getBoundingClientRect(),
 					content = Polymer.dom(this).firstChild,
 					w, h;
 
-				if(content.tagName == 'IFRAME' && bcr.width)
+				if(content.tagName == 'IFRAME')
 				{
-					w = bcr.width;
+					w = this.availableWidth();
 					h =  w * content.height / content.width;
 					
 					content.width = w;
 					content.height = h;
 				}
+				
+				this.set('width', w)
+			},
+			
+			widthChanged : function() {
+				if(!this.resizedBefore)
+					return this.resizedBefore = true;
+				
+				this.debounce('refresh', function() {
+					var p, cl;
+					p = Polymer.dom(this).parentNode;
+					
+					if(!p)
+						return;
+
+					p = Polymer.dom(p);
+					cl = Polymer.dom(this).cloneNode(true);
+					
+					p.insertBefore(cl, this);
+					Polymer.dom.flush();
+					p.removeChild(this);
+					Polymer.dom.flush();
+				}, 100);
+			},
+			
+			availableWidth : function() {
+				var p, bcr, m;
+				
+				p = Polymer.dom(this).parentNode;
+				if(!p)
+					return;
+				
+				bcr = p.getBoundingClientRect();
+				m = p.offsetWidth;
+				
+				do { 
+					m = Math.min(p.offsetWidth, m);
+					p = Polymer.dom(p).parentNode; 
+				} while(p && p != document);
+				return m;
 			}
 
 		});
@@ -66,6 +111,10 @@
 				if(!pn)
 					return;
 
+				do { 
+					m = Math.min(p.offsetWidth, m), p = p.parentNode; 
+				} while(p && p != document)
+					
 				Polymer.dom(pn).insertBefore(clone, s[i]);
 				Polymer.dom(pn).removeChild(s[i]);
 			}
