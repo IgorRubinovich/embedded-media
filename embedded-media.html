@@ -47,11 +47,15 @@
 					
 				if(content.tagName == 'IFRAME')
 				{
+					if(!this.ratio)
+					{
+						this.ratio = content.height / content.width;
+					}
 					w = this.availableWidth();
-					h =  w * content.height / content.width;
+					h =  w * this.ratio;
 					
-					content.width = w;
-					content.height = h;
+					content.style.width = content.width = w + "px";
+					content.style.height = content.height = h + "px";
 				}
 				
 				this.set('width', w)
