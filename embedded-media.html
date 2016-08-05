@@ -48,9 +48,8 @@
 				if(content.tagName == 'IFRAME')
 				{
 					if(!this.ratio)
-					{
 						this.ratio = content.height / content.width;
-					}
+						
 					w = this.availableWidth();
 					h =  w * this.ratio;
 					
