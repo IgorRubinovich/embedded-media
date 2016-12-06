@@ -66,7 +66,7 @@
 					avw = this.availableWidth();
 
 					w = avw;
-					h = w * this.ratio;
+					h = Math.round(w * this.ratio);
 					
 					console.log("ratio", this.ratio)
 					console.log("w:", w, "ow:", this.original.width, "w/w", w/this.original.width)
