@@ -6,6 +6,7 @@
 <dom-module id="embedded-media">
 	<style>
 	</style>
+	size [[width]] [[height]]
 	<template><content></content></template>
 </dom-module>
 
@@ -16,7 +17,14 @@
 			
 			properties : {
 				width : {
-					observer : 'widthChanged'
+					value : 0,
+					//observer : 'widthChanged',
+					//notify : true
+				},
+				height : {
+					value : 0,
+					//observer : 'widthChanged',
+					//notify : true
 				}
 			},
 
@@ -40,25 +48,41 @@
 			_sizeFromContainer : function() {
 				var p = Polymer.dom(this).parentNode,
 					content = Polymer.dom(this).firstChild,
-					w, h;
+					w, h, avw;
 
 				if(!p)
 					return;
 					
 				if(content.tagName == 'IFRAME')
 				{
-					if(!this.ratio)
-						this.ratio = parseInt(content.height) / parseInt(content.width);
-						
-					w = this.availableWidth();
-					h =  w * this.ratio;
+					if(!this.ratio) {
+						this.original = {};
+						this.original.width = content.width;
+						this.original.height = content.height;
+						this.ratio = Math.round((this.original.height * 100000) / (this.original.width));
+						this.ratio = this.ratio / 100000;
+					}
+
+					avw = this.availableWidth();
+
+					w = avw;
+					h = w * this.ratio;
 					
-					content.style.width = content.width = w + "px";
-					content.style.height = content.height = h + "px";
+					console.log("ratio", this.ratio)
+					console.log("w:", w, "ow:", this.original.width, "w/w", w/this.original.width)
+					console.log("h:", h, "oh:", this.original.height, "h/h", h/this.original.height)
+
 					
+					content.style.width = (content.width = w) + "px";
+					content.style.height = (content.height = h) + "px";					
 					
+					console.log(content.style.width, content.style.height);
+					console.log(content.width, content.height);
+
 					this.set('width', w)
 					this.set('height', h)
+
+					content.src += '';
 				}
 
 			},
