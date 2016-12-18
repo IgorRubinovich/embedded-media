@@ -8,8 +8,8 @@
   "description": "A responsive embed element for Polymer 1.0",
   "keywords": [
     "embed",
-	"media",
-	"responsive",
+    "media",
+    "responsive",
     "web-component",
     "web-components",
     "polymer"
@@ -25,7 +25,8 @@
   "dependencies": {
     "webcomponentsjs": "~0.7.7",
     "polymer": "~1.0.8",
-    "css-element-queries": "git@github.com:marcj/css-element-queries.git#~0.3.2"
+    "css-element-queries": "git@github.com:marcj/css-element-queries.git#~0.3.2",
+    "screenfull": "screenfull.js#^1.0.4"
   },
   "devDependencies": {
     "iron-component-page": "PolymerElements/iron-component-page#~1.0.5",

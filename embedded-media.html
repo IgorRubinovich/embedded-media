@@ -1,5 +1,6 @@
 <!--script src="../javascript-detect-element-resize/javascript-detect-element-resize.js"></script-->
 <script src="../css-element-queries/src/ResizeSensor.js"></script>
+<script src="../screenfull/dist/screenfull.min.js"></script>
 <!-- script src="../ResizeSensor/ResizeSensorApi.js"></script -->
 
 
@@ -50,7 +51,7 @@
 					content = Polymer.dom(this).firstChild,
 					w, h, avw;
 
-				if(!p)
+				if(!p || screenfull.isFullscreen) // screenfull.js polyfill is imported at the top of this file
 					return;
 					
 				if(content.tagName == 'IFRAME')
@@ -79,10 +80,13 @@
 					console.log(content.style.width, content.style.height);
 					console.log(content.width, content.height);
 
-					this.set('width', w)
-					this.set('height', h)
+					if(w != this.width || h != this.height) {
+						this.set('width', w)
+						this.set('height', h)
 
-					content.src += '';
+						content.src += ''; 	// there's no way for us to know the iframe content will reflow itself. 
+											// could be specified per service (eg youtube works it out but idnes.cz doesn't)
+					}
 				}
 
 			},
