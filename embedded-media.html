@@ -54,7 +54,7 @@
 				if(!p || screenfull.isFullscreen) // screenfull.js polyfill is imported at the top of this file
 					return;
 					
-				if(content.tagName == 'IFRAME')
+				if(content.tagName == 'IFRAME' && content.src)
 				{
 					if(!this.ratio) {
 						this.original = {};
