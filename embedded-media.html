@@ -13,6 +13,13 @@
 
 <script>
 	(function () {
+		// since there's no magic way to talk to an iframe, the client-side way is to simply know which sites' embeds should not be scaled. Can be a domain name or a specific script
+		var NOSCALING = ['www.facebook.com', 'platform.twitter.com'];
+	
+		function wontScale(url) {
+			return NOSCALING.filter(function(knownUrl) { return new RegExp("^(https?:\/\/)?" + knownUrl).test(url) }).length;
+		}
+	
 		Polymer({
 			is : 'embedded-media',
 			
@@ -24,7 +31,7 @@
 				},
 				height : {
 					value : 0,
-					//observer : 'widthChanged',
+					//observer : 'widthChanged'
 					//notify : true
 				}
 			},
@@ -46,22 +53,36 @@
 				this.debounce('resizeMedia', this._sizeFromContainer, 50);
 			},
 			
-			_sizeFromContainer : function() {
+			_iframeContentLoaded : function() {
+				if(this.content.contentWindow.document.body.scrollHeight != this.height || this.content.contentWindow.document.body.scrollWidth != this.width)
+				{
+					this.original.width = this.content.contentWindow.document.body.scrollWidth;
+					this.original.height = this.content.contentWindow.document.body.scrollHeight;
+					this.ratio = calculateRatio(this.width,this.height);
+				}
+				this._sizeFromContainer(true);
+			},
+			
+			_sizeFromContainer : function(iframeLoaded) {
 				var p = Polymer.dom(this).parentNode,
 					content = Polymer.dom(this).firstChild,
 					w, h, avw;
 
-				if(!p || screenfull.isFullscreen) // screenfull.js polyfill is imported at the top of this file
+				if(!content || !content.tagName || !p || screenfull.isFullscreen) // screenfull.js polyfill is imported at the top of this file
 					return;
-					
-				if(content.tagName == 'IFRAME' && content.src)
+				
+				this.content = content;
+				
+				if(content.tagName == 'IFRAME' && content.src && !wontScale(content.src))
 				{
+					if(!iframeLoaded)
+						content.onload = this._iframeContentLoaded.bind(this);
+					
 					if(!this.ratio) {
 						this.original = {};
 						this.original.width = content.width;
 						this.original.height = content.height;
-						this.ratio = Math.round((this.original.height * 100000) / (this.original.width));
-						this.ratio = this.ratio / 100000;
+						this.ratio = calculateRatio(this.original.width, this.original.height);
 					}
 
 					avw = this.availableWidth();
@@ -131,40 +152,9 @@
 
 		});
 
-		function swapScripts (d) {
-			var clone, attrs, pn;
-			
-			var s = Polymer.dom(d).querySelectorAll('script'), i;
-			
-			for(i = 0; i < s.length; i++)
-			{
-				clone = document.createElement('script');
-				clone.appendChild(document.createTextNode(s[i].textContent));
-				attrs = Array.prototype.slice.call(s[i].attributes);
-				attrs.forEach(function(a) { clone.setAttribute(a.name, a.value); });
-
-				pn = Polymer.dom(s[i]).parentNode; //Polymer.dom(s[i]).parentNode;
-
-				if(!pn)
-					return;
-
-				do { 
-					m = Math.min(p.offsetWidth, m), p = p.parentNode; 
-				} while(p && p != document)
-					
-				Polymer.dom(pn).insertBefore(clone, s[i]);
-				Polymer.dom(pn).removeChild(s[i]);
-			}
-			
-			return s.length;
+		function calculateRatio(w, h){
+			return Math.round((h * 100000) / (w)) / 100000;
 		}
-		
-		function swapChildren(d, skip) {
-			var i, f = document.createDocumentFragment();;
-			for(i = 0; i < d.childNodes.length; i++)
-				f.appendChild(d.childNodes[i]);
-			
-			d.appendChild(f, d);
-		}
+
 	})();
 </script>
