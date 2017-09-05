@@ -53,16 +53,6 @@
 				this.debounce('resizeMedia', this._sizeFromContainer, 50);
 			},
 			
-			_iframeContentLoaded : function() {
-				if(this.content.contentWindow.document.body.scrollHeight != this.height || this.content.contentWindow.document.body.scrollWidth != this.width)
-				{
-					this.original.width = this.content.contentWindow.document.body.scrollWidth;
-					this.original.height = this.content.contentWindow.document.body.scrollHeight;
-					this.ratio = calculateRatio(this.width,this.height);
-				}
-				this._sizeFromContainer(true);
-			},
-			
 			_sizeFromContainer : function(iframeLoaded) {
 				var p = Polymer.dom(this).parentNode,
 					content = Polymer.dom(this).firstChild,
@@ -75,9 +65,6 @@
 				
 				if(content.tagName == 'IFRAME' && content.src && !wontScale(content.src))
 				{
-					if(!iframeLoaded)
-						content.onload = this._iframeContentLoaded.bind(this);
-					
 					if(!this.ratio) {
 						this.original = {};
 						this.original.width = content.width;
