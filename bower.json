@@ -33,6 +33,6 @@
     "web-component-tester": "*"
   },
   "resolutions": {
-    "polymer": "~1.1.2"
+    "polymer": "^1.9.3"
   }
 }
